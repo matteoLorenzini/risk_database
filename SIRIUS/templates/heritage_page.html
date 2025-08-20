@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ table_name.replace('_', ' ').title() }}</title>
+</head>
+<body>
+    <h1>{{ table_name.replace('_', ' ').title() }}</h1>
+
+    <p>
+        🔹 <a href="{{ url_for('show_nara_grid') }}">Vai a NARA Grid</a><br>
+        🔹 <a href="{{ url_for('show_risk_analysis') }}">Vai a Risk Analysis</a>
+    </p>
+
+    <table border="1">
+        <thead>
+            <tr>
+                {% for col in columns %}
+                    <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+                <tr>
+                    {% for col in columns %}
+                        <td>{{ row[col] }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Rischio - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">
+                <i class="fas fa-shield-alt me-3"></i>
+                Sistema Gestione Rischio
+            </h1>
+            <p class="lead">Sistema avanzato per la gestione e analisi dei rischi del patrimonio culturale</p>
+            
+            <!-- Navigation Buttons -->
+            <div class="row justify-content-center mt-5">
+                <div class="col-md-5 mb-3">
+                    <a href="/main-tables" class="btn btn-light btn-lg w-100 shadow">
+                        <i class="fas fa-star me-2"></i>
+                        <strong>Tabelle Principali</strong>
+                        <br><small class="text-muted">Cultural Heritage, Risk Analysis, Value Dimensions</small>
+                    </a>
+                </div>
+                <div class="col-md-5 mb-3">
+                    <a href="/all-tables" class="btn btn-outline-light btn-lg w-100">
+                        <i class="fas fa-database me-2"></i>
+                        <strong>Tutte le Tabelle</strong>
+                        <br><small>Vista completa del database</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'warning' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% if tables and tables|length > 0 %}
+            <!-- Quick preview of available tables -->
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>{{ tables|length }} tabelle</strong> trovate nel database
+            </div>
+        {% endif %}
+
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card border-0 shadow">
+                    <div class="card-body">
+                        <h3 class="card-title mb-4">
+                            <i class="fas fa-tools me-2"></i>
+                            Funzionalità Disponibili
+                        </h3>
+                        <div class="row">
+                            <div class="col-md-3 text-center mb-3">
+                                <i class="fas fa-plus-circle text-success" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">INSERT</h6>
+                                <small class="text-muted">Aggiungi nuovi record</small>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <i class="fas fa-filter text-info" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">FILTER</h6>
+                                <small class="text-muted">Filtra e cerca dati</small>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <i class="fas fa-edit text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">UPDATE</h6>
+                                <small class="text-muted">Modifica record esistenti</small>
+                            </div>
+                            <div class="col-md-3 text-center mb-3">
+                                <i class="fas fa-trash text-danger" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2">DELETE</h6>
+                                <small class="text-muted">Elimina record</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

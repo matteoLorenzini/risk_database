@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuovo Record - {{ table_name.replace('_', ' ').title() }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .form-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: -30px -30px 30px -30px;
+        }
+        .field-info {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .required-field {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-shield-alt me-2"></i>
+                Gestione Rischio
+            </a>
+            <span class="navbar-text">
+                Nuovo Record - {{ table_name.replace('_', ' ').title() }}
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="form-container">
+                    <div class="form-header">
+                        <h3 class="mb-0">
+                            <i class="fas fa-plus-circle me-2"></i>
+                            Aggiungi Nuovo Record
+                        </h3>
+                        <p class="mb-0 mt-2">Compila i campi sottostanti per aggiungere un nuovo record alla tabella {{ table_name.replace('_', ' ').title() }}</p>
+                    </div>
+
+                    <form method="POST" id="insertForm">
+                        <div class="row">
+                            {% for col in schema %}
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ col.column_name }}" class="form-label">
+                                        <i class="fas fa-{{ 
+                                            'hashtag' if col.data_type in ['integer', 'bigint', 'smallint'] else
+                                            'decimal' if col.data_type in ['numeric', 'real', 'double precision'] else
+                                            'font' if col.data_type in ['text', 'character varying', 'varchar'] else
+                                            'calendar' if col.data_type in ['date', 'timestamp'] else
+                                            'toggle-on' if col.data_type == 'boolean' else
+                                            'file-alt'
+                                        }} me-1"></i>
+                                        {{ col.column_name.replace('_', ' ').title() }}
+                                        {% if col.is_nullable == 'NO' and not col.column_default %}
+                                            <span class="required-field">*</span>
+                                        {% endif %}
+                                    </label>
+                                    
+                                    {% if col.data_type == 'boolean' %}
+                                        <select class="form-select" id="{{ col.column_name }}" name="{{ col.column_name }}">
+                                            <option value="">Seleziona...</option>
+                                            <option value="true">Sì</option>
+                                            <option value="false">No</option>
+                                        </select>
+                                    {% elif col.column_name in foreign_keys and col.column_name in fk_options %}
+                                        <select class="form-select" id="{{ col.column_name }}" name="{{ col.column_name }}">
+                                            <option value="">Seleziona {{ col.column_name.replace('_', ' ').lower() }}...</option>
+                                            {% for option in fk_options[col.column_name] %}
+                                                <option value="{{ option.value }}">{{ option.display }} (ID: {{ option.value }})</option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="field-info mt-1">
+                                            <small class="text-info">
+                                                <i class="fas fa-link me-1"></i>
+                                                Riferimento a tabella {{ foreign_keys[col.column_name].table }}
+                                            </small>
+                                        </div>
+                                    {% elif col.data_type == 'text' %}
+                                        <textarea class="form-control" id="{{ col.column_name }}" name="{{ col.column_name }}" rows="3"
+                                                placeholder="Inserisci {{ col.column_name.replace('_', ' ').lower() }}..."></textarea>
+                                    {% elif col.data_type == 'date' %}
+                                        <input type="date" class="form-control" id="{{ col.column_name }}" name="{{ col.column_name }}">
+                                    {% elif col.data_type == 'timestamp' %}
+                                        <input type="datetime-local" class="form-control" id="{{ col.column_name }}" name="{{ col.column_name }}">
+                                    {% elif col.data_type in ['integer', 'bigint', 'smallint'] %}
+                                        <input type="number" class="form-control" id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               placeholder="Inserisci numero intero...">
+                                    {% elif col.data_type in ['numeric', 'real', 'double precision'] %}
+                                        <input type="number" step="any" class="form-control" id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               placeholder="Inserisci numero decimale...">
+                                    {% else %}
+                                        <input type="text" class="form-control" id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               placeholder="Inserisci {{ col.column_name.replace('_', ' ').lower() }}...">
+                                    {% endif %}
+                                    
+                                    <div class="field-info mt-1">
+                                        Tipo: {{ col.data_type }}
+                                        {% if col.column_name in foreign_keys %}
+                                            | <span class="text-info">
+                                                <i class="fas fa-link me-1"></i>Riferimento
+                                            </span>
+                                        {% elif col.is_nullable == 'NO' and not col.column_default %}
+                                            | <span class="required-field">Obbligatorio</span>
+                                        {% else %}
+                                            | Opzionale
+                                        {% endif %}
+                                        {% if col.column_default %}
+                                            | Default: {{ col.column_default }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="/table/{{ table_name }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Torna alla Tabella
+                            </a>
+                            <div>
+                                <button type="reset" class="btn btn-outline-warning me-2">
+                                    <i class="fas fa-undo me-2"></i>Reset Form
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-2"></i>Salva Record
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form validation
+        document.getElementById('insertForm').addEventListener('submit', function(e) {
+            const requiredFields = document.querySelectorAll('input[required], select[required], textarea[required]');
+            let hasErrors = false;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('is-invalid');
+                    hasErrors = true;
+                } else {
+                    field.classList.remove('is-invalid');
+                }
+            });
+            
+            if (hasErrors) {
+                e.preventDefault();
+                alert('Completa tutti i campi obbligatori prima di continuare.');
+            }
+        });
+
+        // Remove validation errors on input
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('is-invalid')) {
+                e.target.classList.remove('is-invalid');
+            }
+        });
+    </script>
+</body>
+</html>

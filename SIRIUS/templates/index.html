@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gestione Rischio - Tabelle</title>
+</head>
+<body>
+    <h1>Tabelle nel database</h1>
+    <ul>
+        {% for table in tables %}
+            <li><a href="{{ url_for('show_table', table_name=table) }}">{{ table }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

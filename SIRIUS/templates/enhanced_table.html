@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ table_name.replace('_', ' ').title() }} - Gestione Rischio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .table-actions {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn-action {
+            margin: 0 5px;
+        }
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        .pagination-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 0 0 10px 10px;
+        }
+        .search-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .record-count {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-shield-alt me-2"></i>
+                Gestione Rischio
+            </a>
+            <span class="navbar-text">
+                {{ table_name.replace('_', ' ').title() }}
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'warning' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Search and Filter Form -->
+        <div class="search-form">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">
+                        <i class="fas fa-search me-1"></i>Ricerca generale
+                    </label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Cerca in tutti i campi...">
+                </div>
+                <div class="col-md-3">
+                    <label for="filter_column" class="form-label">
+                        <i class="fas fa-filter me-1"></i>Filtra per colonna
+                    </label>
+                    <select class="form-select" id="filter_column" name="filter_column">
+                        <option value="">Seleziona colonna...</option>
+                        {% for col in schema %}
+                            <option value="{{ col.column_name }}" 
+                                    {{ 'selected' if filter_column == col.column_name }}>
+                                {{ col.column_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filter_value" class="form-label">Valore</label>
+                    <input type="text" class="form-control" id="filter_value" name="filter_value" 
+                           value="{{ filter_value }}" placeholder="Valore del filtro...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Filtra
+                        </button>
+                        <a href="/table/{{ table_name }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-times me-1"></i>Reset
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="table-actions">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        {{ table_name.replace('_', ' ').title() }}
+                    </h4>
+                    <p class="record-count mb-0">Totale record: {{ total }}</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="/insert/{{ table_name }}" class="btn btn-success btn-action">
+                        <i class="fas fa-plus me-2"></i>Nuovo Record
+                    </a>
+                    <a href="/" class="btn btn-outline-secondary btn-action">
+                        <i class="fas fa-home me-2"></i>Home
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-container">
+            {% if data %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                {% for col in schema %}
+                                    <th>
+                                        {{ col.column_name }}
+                                        {% if col.data_type in ['integer', 'numeric', 'real', 'double precision'] %}
+                                            <i class="fas fa-sort-numeric-down text-white-50"></i>
+                                        {% elif col.data_type in ['text', 'character varying', 'varchar'] %}
+                                            <i class="fas fa-sort-alpha-down text-white-50"></i>
+                                        {% elif col.data_type in ['timestamp', 'date'] %}
+                                            <i class="fas fa-calendar text-white-50"></i>
+                                        {% endif %}
+                                    </th>
+                                {% endfor %}
+                                <th width="150">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data %}
+                                <tr>
+                                    {% for col in schema %}
+                                        <td>
+                                            {% set col_name = col.column_name %}
+                                            {% set value = row[col_name] %}
+                                            {% set display_key = col_name + '_display' %}
+                                            
+                                            {# Check if this column has a foreign key display value #}
+                                            {% if col_name in foreign_keys and display_key in row and row[display_key] %}
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold text-primary">{{ row[display_key] }}</span>
+                                                    <small class="text-muted ms-2" title="ID: {{ value }}">({{ value }})</small>
+                                                </div>
+                                            {% elif value is none %}
+                                                <span class="text-muted fst-italic">NULL</span>
+                                            {% elif col.data_type == 'boolean' %}
+                                                {% if value %}
+                                                    <i class="fas fa-check text-success"></i> Sì
+                                                {% else %}
+                                                    <i class="fas fa-times text-danger"></i> No
+                                                {% endif %}
+                                            {% elif col.data_type in ['timestamp', 'date'] %}
+                                                <i class="fas fa-calendar-alt me-1"></i>{{ value.strftime('%d/%m/%Y %H:%M') if value.strftime else value }}
+                                            {% elif col.data_type in ['text', 'character varying'] and value|length > 50 %}
+                                                <span title="{{ value }}">{{ value[:50] }}...</span>
+                                            {% else %}
+                                                {{ value }}
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td>
+                                        {% if primary_keys %}
+                                            {% set pk_value = row[primary_keys[0]] %}
+                                            <div class="btn-group" role="group">
+                                                <a href="/update/{{ table_name }}/{{ pk_value }}" 
+                                                   class="btn btn-warning btn-sm" title="Modifica">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger btn-sm" 
+                                                        onclick="confirmDelete('{{ pk_value }}')" title="Elimina">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                    <div class="pagination-container">
+                        <nav>
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                {% if page > 1 %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page - 1 }}&search={{ search }}&filter_column={{ filter_column }}&filter_value={{ filter_value }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for p in range(1, total_pages + 1) %}
+                                    {% if p == page %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ p }}</span>
+                                        </li>
+                                    {% elif p <= 3 or p >= total_pages - 2 or (p >= page - 2 and p <= page + 2) %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ p }}&search={{ search }}&filter_column={{ filter_column }}&filter_value={{ filter_value }}">{{ p }}</a>
+                                        </li>
+                                    {% elif p == 4 and page > 6 %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% elif p == total_pages - 3 and page < total_pages - 5 %}
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page < total_pages %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page + 1 }}&search={{ search }}&filter_column={{ filter_column }}&filter_value={{ filter_value }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                Pagina {{ page }} di {{ total_pages }} ({{ total }} record totali)
+                            </small>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5>Nessun record trovato</h5>
+                    <p class="text-muted">Non ci sono dati che corrispondono ai criteri di ricerca.</p>
+                    {% if search or filter_column %}
+                        <a href="/table/{{ table_name }}" class="btn btn-primary">
+                            <i class="fas fa-refresh me-2"></i>Mostra tutti i record
+                        </a>
+                    {% else %}
+                        <a href="/insert/{{ table_name }}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Aggiungi il primo record
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                        Conferma Eliminazione
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Sei sicuro di voler eliminare questo record? Questa azione non può essere annullata.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <form method="POST" id="deleteForm" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Elimina
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmDelete(recordId) {
+            document.getElementById('deleteForm').action = '/delete/{{ table_name }}/' + recordId;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+    </script>
+</body>
+</html>

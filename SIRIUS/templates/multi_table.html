@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Risk Analysis</title>
+</head>
+<body>
+    <h1>Risk Analysis</h1>
+    {% for table_name, table_data in tables.items() %}
+        <h2>{{ table_name }}</h2>
+        <table border="1">
+            <thead>
+                <tr>
+                    {% for col in table_data.columns %}
+                        <th>{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table_data.rows %}
+                    <tr>
+                        {% for col in table_data.columns %}
+                            <td>{{ row[col] }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <br>
+    {% endfor %}
+    <p><a href="{{ url_for('landing_page') }}">⬅ Torna alla home</a></p>
+</body>
+</html>

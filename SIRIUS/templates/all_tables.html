@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutte le Tabelle - Gestione Rischio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+        }
+        .table-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border: none;
+            border-radius: 10px;
+        }
+        .table-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .breadcrumb {
+            background: transparent;
+        }
+        .breadcrumb-item a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .search-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .table-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-shield-alt me-2"></i>
+                Gestione Rischio
+            </a>
+            <span class="navbar-text">
+                <i class="fas fa-database me-2"></i>
+                Tutte le Tabelle
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/"><i class="fas fa-home me-1"></i>Home</a></li>
+                <li class="breadcrumb-item active"><i class="fas fa-database me-1"></i>Tutte le Tabelle</li>
+            </ol>
+        </nav>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'warning' }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Statistics and Actions -->
+        <div class="stats-card">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <h4 class="text-primary mb-0">{{ tables|length }}</h4>
+                    <small class="text-muted">Tabelle Totali</small>
+                </div>
+                <div class="col-md-6">
+                    <h5 class="mb-0">Database Completo</h5>
+                    <small class="text-muted">Vista di tutte le tabelle disponibili nel sistema</small>
+                </div>
+                <div class="col-md-3">
+                    <a href="/main-tables" class="btn btn-primary">
+                        <i class="fas fa-star me-2"></i>Tabelle Principali
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Cerca tabelle per nome...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="sortSelect">
+                        <option value="name">Ordina per Nome</option>
+                        <option value="category">Ordina per Categoria</option>
+                        <option value="type">Ordina per Tipo</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="text-center mb-4">
+            <h2 class="mb-3">
+                <i class="fas fa-database text-primary me-3"></i>
+                Database Completo
+            </h2>
+            <p class="lead text-muted">
+                Accesso completo a tutte le tabelle del database
+            </p>
+        </div>
+
+        {% if tables %}
+            <div class="table-grid" id="tablesGrid">
+                {% for table in tables %}
+                    <div class="table-item" data-name="{{ table.lower() }}">
+                        <div class="card table-card h-100 shadow-sm">
+                            <div class="card-body text-center">
+                                <div class="table-icon text-{{ 
+                                    'primary' if 'heritage' in table or 'cultural' in table else
+                                    'success' if 'dimension' in table or 'value' in table or 'class' in table else
+                                    'danger' if 'risk' in table or 'agent' in table else
+                                    'warning' if 'analysis' in table else
+                                    'info' if 'occurrence' in table or 'sentence' in table else
+                                    'secondary'
+                                }}">
+                                    <i class="fas fa-{{ 
+                                        'university' if 'heritage' in table or 'cultural' in table else
+                                        'table' if 'dimension' in table or 'grid' in table or 'value' in table or 'class' in table else
+                                        'exclamation-triangle' if 'risk' in table or 'agent' in table else
+                                        'chart-line' if 'analysis' in table else
+                                        'list' if 'occurrence' in table or 'sentence' in table else
+                                        'database'
+                                    }}"></i>
+                                </div>
+                                
+                                <h6 class="card-title">{{ table.replace('_', ' ').title() }}</h6>
+                                
+                                <div class="mb-3">
+                                    <span class="badge bg-light text-dark">
+                                        <i class="fas fa-table me-1"></i>{{ table }}
+                                    </span>
+                                </div>
+
+                                <!-- Category Badge -->
+                                {% if 'heritage' in table or 'cultural' in table %}
+                                    <span class="badge bg-primary mb-2">Patrimonio Culturale</span>
+                                {% elif 'risk' in table or 'agent' in table %}
+                                    <span class="badge bg-danger mb-2">Gestione Rischi</span>
+                                {% elif 'value' in table or 'dimension' in table or 'class' in table %}
+                                    <span class="badge bg-success mb-2">Valutazione NARA</span>
+                                {% elif 'analysis' in table %}
+                                    <span class="badge bg-warning mb-2">Analisi</span>
+                                {% else %}
+                                    <span class="badge bg-secondary mb-2">Sistema</span>
+                                {% endif %}
+                                
+                                <!-- Action Buttons -->
+                                <div class="d-grid gap-2">
+                                    <a href="/table/{{ table }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>Visualizza
+                                    </a>
+                                    <div class="btn-group" role="group">
+                                        <a href="/insert/{{ table }}" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                        <button class="btn btn-outline-info btn-sm" onclick="getTableInfo('{{ table }}')">
+                                            <i class="fas fa-info"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- No results message (initially hidden) -->
+            <div id="noResults" class="text-center py-5" style="display: none;">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h5>Nessuna Tabella Trovata</h5>
+                <p class="text-muted">Nessuna tabella corrisponde ai criteri di ricerca.</p>
+                <button onclick="clearSearch()" class="btn btn-primary">
+                    <i class="fas fa-times me-2"></i>Cancella Ricerca
+                </button>
+            </div>
+
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                <h5>Nessuna Tabella Trovata</h5>
+                <p class="text-muted">Non sono state trovate tabelle nel database o si è verificato un errore di connessione.</p>
+                <div class="mt-4">
+                    <a href="/test-db" class="btn btn-primary me-3">
+                        <i class="fas fa-tools me-2"></i>Test Database
+                    </a>
+                    <button onclick="location.reload()" class="btn btn-outline-secondary">
+                        <i class="fas fa-refresh me-2"></i>Ricarica
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card border-0 shadow">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">
+                            <i class="fas fa-bolt text-warning me-2"></i>
+                            Azioni Rapide
+                        </h5>
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-3">
+                                <a href="/main-tables" class="btn btn-outline-primary btn-lg w-100">
+                                    <i class="fas fa-star d-block mb-2" style="font-size: 2rem;"></i>
+                                    Tabelle Principali
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/test-db" class="btn btn-outline-info btn-lg w-100">
+                                    <i class="fas fa-stethoscope d-block mb-2" style="font-size: 2rem;"></i>
+                                    Test Database
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <button class="btn btn-outline-success btn-lg w-100" onclick="exportTablesList()">
+                                    <i class="fas fa-download d-block mb-2" style="font-size: 2rem;"></i>
+                                    Esporta Lista
+                                </button>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <a href="/" class="btn btn-outline-secondary btn-lg w-100">
+                                    <i class="fas fa-home d-block mb-2" style="font-size: 2rem;"></i>
+                                    Home
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Info Modal -->
+    <div class="modal fade" id="tableInfoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        Informazioni Tabella
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="tableInfoContent">Caricamento...</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const tableItems = document.querySelectorAll('.table-item');
+            let visibleCount = 0;
+
+            tableItems.forEach(item => {
+                const tableName = item.dataset.name;
+                if (tableName.includes(searchTerm)) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        });
+
+        // Sort functionality
+        document.getElementById('sortSelect').addEventListener('change', function() {
+            const sortBy = this.value;
+            const grid = document.getElementById('tablesGrid');
+            const items = Array.from(document.querySelectorAll('.table-item'));
+
+            items.sort((a, b) => {
+                const nameA = a.dataset.name;
+                const nameB = b.dataset.name;
+                
+                if (sortBy === 'name') {
+                    return nameA.localeCompare(nameB);
+                } else if (sortBy === 'category') {
+                    const categoryA = getCategoryFromName(nameA);
+                    const categoryB = getCategoryFromName(nameB);
+                    return categoryA.localeCompare(categoryB) || nameA.localeCompare(nameB);
+                }
+                
+                return nameA.localeCompare(nameB);
+            });
+
+            // Re-append sorted items
+            items.forEach(item => grid.appendChild(item));
+        });
+
+        function getCategoryFromName(name) {
+            if (name.includes('heritage') || name.includes('cultural')) return 'patrimonio';
+            if (name.includes('risk') || name.includes('agent')) return 'rischi';
+            if (name.includes('value') || name.includes('dimension') || name.includes('class')) return 'valutazione';
+            if (name.includes('analysis')) return 'analisi';
+            return 'sistema';
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.table-item').forEach(item => {
+                item.style.display = 'block';
+            });
+            document.getElementById('noResults').style.display = 'none';
+        }
+
+        function getTableInfo(tableName) {
+            document.getElementById('tableInfoContent').innerHTML = 'Caricamento informazioni...';
+            new bootstrap.Modal(document.getElementById('tableInfoModal')).show();
+            
+            setTimeout(() => {
+                document.getElementById('tableInfoContent').innerHTML = `
+                    <h6>Tabella: ${tableName}</h6>
+                    <p class="text-muted">Nome tecnico: <code>${tableName}</code></p>
+                    <hr>
+                    <p>Per visualizzare la struttura completa e i dati della tabella:</p>
+                    <div class="d-grid gap-2">
+                        <a href="/table/${tableName}" class="btn btn-primary">
+                            <i class="fas fa-eye me-2"></i>Visualizza Struttura e Dati
+                        </a>
+                        <a href="/insert/${tableName}" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Aggiungi Nuovo Record
+                        </a>
+                    </div>
+                `;
+            }, 500);
+        }
+
+        function exportTablesList() {
+            // Get table names from the DOM instead of using template variables
+            const tableItems = document.querySelectorAll('.table-item');
+            const tableNames = Array.from(tableItems).map(item => 
+                item.dataset.name.replace(/_/g, ' ').toUpperCase()
+            );
+            const tableList = tableNames.join('\n');
+            const content = `ELENCO TABELLE DATABASE - ${new Date().toLocaleDateString()}\n\n${tableList}`;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'elenco_tabelle.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

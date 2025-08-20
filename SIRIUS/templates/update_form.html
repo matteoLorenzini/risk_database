@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifica Record - {{ table_name.replace('_', ' ').title() }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .form-header {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            margin: -30px -30px 30px -30px;
+        }
+        .field-info {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .primary-key {
+            background-color: #e3f2fd;
+            border: 2px solid #2196f3;
+        }
+        .readonly-field {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-shield-alt me-2"></i>
+                Gestione Rischio
+            </a>
+            <span class="navbar-text">
+                Modifica Record - {{ table_name.replace('_', ' ').title() }}
+            </span>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="form-container">
+                    <div class="form-header">
+                        <h3 class="mb-0">
+                            <i class="fas fa-edit me-2"></i>
+                            Modifica Record
+                        </h3>
+                        <p class="mb-0 mt-2">Modifica i campi del record nella tabella {{ table_name.replace('_', ' ').title() }}</p>
+                    </div>
+
+                    <form method="POST" id="updateForm">
+                        <div class="row">
+                            {% for col in schema %}
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ col.column_name }}" class="form-label">
+                                        <i class="fas fa-{{ 
+                                            'key' if col.column_name == primary_key else
+                                            'hashtag' if col.data_type in ['integer', 'bigint', 'smallint'] else
+                                            'decimal' if col.data_type in ['numeric', 'real', 'double precision'] else
+                                            'font' if col.data_type in ['text', 'character varying', 'varchar'] else
+                                            'calendar' if col.data_type in ['date', 'timestamp'] else
+                                            'toggle-on' if col.data_type == 'boolean' else
+                                            'file-alt'
+                                        }} me-1"></i>
+                                        {{ col.column_name.replace('_', ' ').title() }}
+                                        {% if col.column_name == primary_key %}
+                                            <span class="badge bg-primary ms-2">Primary Key</span>
+                                        {% endif %}
+                                    </label>
+                                    
+                                    {% set current_value = record[col.column_name] %}
+                                    {% set is_primary_key = col.column_name == primary_key %}
+                                    
+                                    {% if col.data_type == 'boolean' %}
+                                        <select class="form-select {{ 'readonly-field' if is_primary_key else '' }}" 
+                                                id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                                {{ 'disabled' if is_primary_key else '' }}>
+                                            <option value="">Seleziona...</option>
+                                            <option value="true" {{ 'selected' if current_value == true }}>Sì</option>
+                                            <option value="false" {{ 'selected' if current_value == false }}>No</option>
+                                        </select>
+                                    {% elif col.column_name in foreign_keys and col.column_name in fk_options and not is_primary_key %}
+                                        <select class="form-select" id="{{ col.column_name }}" name="{{ col.column_name }}">
+                                            <option value="">Seleziona {{ col.column_name.replace('_', ' ').lower() }}...</option>
+                                            {% for option in fk_options[col.column_name] %}
+                                                <option value="{{ option.value }}" {{ 'selected' if current_value == option.value }}>
+                                                    {{ option.display }} (ID: {{ option.value }})
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <div class="field-info mt-1">
+                                            <small class="text-info">
+                                                <i class="fas fa-link me-1"></i>
+                                                Riferimento a tabella {{ foreign_keys[col.column_name].table }}
+                                            </small>
+                                        </div>
+                                    {% elif col.data_type == 'text' %}
+                                        <textarea class="form-control {{ 'primary-key' if is_primary_key else '' }}" 
+                                                id="{{ col.column_name }}" name="{{ col.column_name }}" rows="3"
+                                                {{ 'readonly' if is_primary_key else '' }}
+                                                placeholder="Inserisci {{ col.column_name.replace('_', ' ').lower() }}...">{{ current_value if current_value is not none else '' }}</textarea>
+                                    {% elif col.data_type == 'date' %}
+                                        <input type="date" class="form-control {{ 'primary-key' if is_primary_key else '' }}" 
+                                               id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               value="{{ current_value.strftime('%Y-%m-%d') if current_value and hasattr(current_value, 'strftime') else current_value if current_value else '' }}"
+                                               {{ 'readonly' if is_primary_key else '' }}>
+                                    {% elif col.data_type == 'timestamp' %}
+                                        <input type="datetime-local" class="form-control {{ 'primary-key' if is_primary_key else '' }}" 
+                                               id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               value="{{ current_value.strftime('%Y-%m-%dT%H:%M') if current_value and hasattr(current_value, 'strftime') else current_value if current_value else '' }}"
+                                               {{ 'readonly' if is_primary_key else '' }}>
+                                    {% elif col.data_type in ['integer', 'bigint', 'smallint'] %}
+                                        <input type="number" class="form-control {{ 'primary-key' if is_primary_key else '' }}" 
+                                               id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               value="{{ current_value if current_value is not none else '' }}"
+                                               placeholder="Inserisci numero intero..."
+                                               {{ 'readonly' if is_primary_key else '' }}>
+                                    {% elif col.data_type in ['numeric', 'real', 'double precision'] %}
+                                        <input type="number" step="any" class="form-control {{ 'primary-key' if is_primary_key else '' }}" 
+                                               id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               value="{{ current_value if current_value is not none else '' }}"
+                                               placeholder="Inserisci numero decimale..."
+                                               {{ 'readonly' if is_primary_key else '' }}>
+                                    {% else %}
+                                        <input type="text" class="form-control {{ 'primary-key' if is_primary_key else '' }}" 
+                                               id="{{ col.column_name }}" name="{{ col.column_name }}"
+                                               value="{{ current_value if current_value is not none else '' }}"
+                                               placeholder="Inserisci {{ col.column_name.replace('_', ' ').lower() }}..."
+                                               {{ 'readonly' if is_primary_key else '' }}>
+                                    {% endif %}
+                                    
+                                    <div class="field-info mt-1">
+                                        Tipo: {{ col.data_type }}
+                                        {% if is_primary_key %}
+                                            | <span class="text-primary">Chiave primaria (non modificabile)</span>
+                                        {% elif col.column_name in foreign_keys %}
+                                            | <span class="text-info">
+                                                <i class="fas fa-link me-1"></i>Riferimento a {{ foreign_keys[col.column_name].table }}
+                                            </span>
+                                        {% elif col.is_nullable == 'NO' %}
+                                            | <span class="text-warning">Obbligatorio</span>
+                                        {% else %}
+                                            | Opzionale
+                                        {% endif %}
+                                        {% if col.column_default %}
+                                            | Default: {{ col.column_default }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <hr class="my-4">
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Nota:</strong> I campi con chiave primaria non possono essere modificati. 
+                            Lascia vuoti i campi che non vuoi modificare (verranno impostati su NULL se consentito).
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="/table/{{ table_name }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Torna alla Tabella
+                            </a>
+                            <div>
+                                <button type="button" class="btn btn-outline-warning me-2" onclick="resetForm()">
+                                    <i class="fas fa-undo me-2"></i>Reset Form
+                                </button>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save me-2"></i>Aggiorna Record
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Store original values for reset functionality
+        const originalValues = {};
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            if (field.name) {
+                originalValues[field.name] = field.value;
+            }
+        });
+
+        function resetForm() {
+            Object.keys(originalValues).forEach(name => {
+                const field = document.querySelector(`[name="${name}"]`);
+                if (field) {
+                    field.value = originalValues[name];
+                }
+            });
+        }
+
+        // Form validation
+        document.getElementById('updateForm').addEventListener('submit', function(e) {
+            if (!confirm('Sei sicuro di voler salvare le modifiche?')) {
+                e.preventDefault();
+            }
+        });
+
+        // Highlight changes
+        document.addEventListener('input', function(e) {
+            if (e.target.name && originalValues[e.target.name] !== undefined) {
+                if (e.target.value !== originalValues[e.target.name]) {
+                    e.target.classList.add('border-warning');
+                    e.target.style.borderWidth = '2px';
+                } else {
+                    e.target.classList.remove('border-warning');
+                    e.target.style.borderWidth = '1px';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
